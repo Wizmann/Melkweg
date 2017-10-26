@@ -1,0 +1,13 @@
+attrs==17.2.0
+Automat==0.6.0
+constantly==15.1.0
+enum34==1.1.6
+hyperlink==17.3.1
+incremental==17.5.0
+protobuf==3.4.0
+py==1.4.34
+pycrypto==2.6.1
+pytest==3.2.3
+six==1.11.0
+Twisted==17.9.0
+zope.interface==4.4.3

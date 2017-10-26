@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package Melkweg;
+
+message MPacket {
+    bytes iv = 1;
+
+    uint32 port = 10;
+    uint32 flags = 11;
+    bytes data = 12;
+    bytes padding = 13;
+
+    string user = 20;
+    string secret = 21;
+}
