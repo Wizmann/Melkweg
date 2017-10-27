@@ -17,6 +17,9 @@ def digest(plain_text):
 def nonce(length):
     return ''.join([chr(random.randint(0, 255)) for i in xrange(length)])
 
+def hexlify(binary):
+    return binascii.hexlify(binary)
+
 class ICipher(object):
     __metaclass__ = abc.ABCMeta
 
