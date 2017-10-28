@@ -1,18 +1,11 @@
 #coding=utf-8
 
 import logging
-from twisted.internet import defer, protocol, reactor
-from twisted.python import log
+from twisted.internet import defer, protocol, reactor, error
 
 import config
 from protocol import MelkwegClientProtocol
 from packet_factory import PacketFactory
-
-observer = log.PythonLoggingObserver()
-observer.start()
-
-fmt = "%(levelname)-8s %(asctime)-15s [%(filename)s:%(lineno)d] %(message)s"
-logging.basicConfig(format=fmt, level=logging.NOTSET)
 
 class MelkwegLocalProxyProtocol(protocol.Protocol):
     def __init__(self, addr, port, outgoing):
@@ -33,8 +26,12 @@ class MelkwegLocalProxyProtocol(protocol.Protocol):
             self.transport.loseConnection()
 
     def connectionLost(self, reason):
-        #self.outgoing.write(PacketFactory.create_fin_packet(self.port))
-        del self.outgoing.d[self.port]
+        if reason.check(error.ConnectionDone):
+            self.outgoing.write(PacketFactory.create_fin_packet(self.port))
+        else:
+            self.outgoing.write(PacketFactory.create_rst_packet(self.port))
+        if self.port in self.outgoing.d:
+            del self.outgoing.d[self.port]
 
 class MelkwegClientProtocolFactory(protocol.ReconnectingClientFactory):
     protocol = MelkwegClientProtocol

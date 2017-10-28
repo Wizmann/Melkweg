@@ -2,8 +2,7 @@
 from enum import Enum
 import logging
 
-from twisted.python import log
-from twisted.internet import defer, protocol, reactor
+from twisted.internet import defer, protocol, reactor, error
 from twisted.protocols.basic import Int32StringReceiver
 
 from packet_pb2 import MPacket
@@ -11,7 +10,6 @@ from packet_pb2 import MPacket
 import config
 from cipher import AES_CTR, nonce, hexlify
 from socks5 import SOCKSv5
-from socks5_adapter import MelkwegProtocolTransportAdapter
 from packet_factory import PacketFactory, PacketFlag
 
 class ProtocolState(Enum):
@@ -20,7 +18,7 @@ class ProtocolState(Enum):
     DONE = 3
     ERROR = 4
 
-class MelkwegServerProtocolBase(Int32StringReceiver):
+class MelkwegProtocolBase(Int32StringReceiver):
     def __init__(self):
         self.key = config.KEY
         self.iv = nonce(16)
@@ -29,67 +27,46 @@ class MelkwegServerProtocolBase(Int32StringReceiver):
         self.d = {} 
         logging.info("self iv: %s" % hexlify(self.iv))
 
-    def write(self, packet, raw=False):
-        data = packet.SerializeToString()
-        logging.debug("write data [packet:%d|raw:%s]" % (len(data), raw))
-        if raw:
-            self.sendString(data)
-        else:
-            self.sendString(self.aes.encrypt(data))
-
-    def read(self, data):
-        return self.peer_aes.decrypt(data)
-
     def is_server(self):
         return 'SERVER' in self.__class__.__dict__
 
     def is_client(self):
         return 'CLIENT' in self.__class__.__dict__
 
-    def connectionMade(self):
-        logging.debug("connection is made")
-        if self.is_client():
-            self.write(PacketFactory.create_syn_packet(self.iv), raw=True)
+    def write(self, packet):
+        data = packet.SerializeToString()
+        logging.debug("write data [packet:%d|state:%s]" % (len(data), self.state))
+        if self.state == ProtocolState.READY:
+            self.sendString(data)
+        else:
+            self.sendString(self.aes.encrypt(data))
 
     def stringReceived(self, string):
         logging.debug("string received: %d, state: %s" % (len(string), self.state))
 
-        if self.state == ProtocolState.READY:
-            mpacket = self.parse(string, raw=True)
-            if mpacket == None:
-                self.handle_error()
-                logging.error("error on READY state")
-            elif mpacket.iv != None:
-                self.peer_aes = AES_CTR(self.key, mpacket.iv)
-                self.state = ProtocolState.RUNNING
+        mpacket = self.parse(string)
 
+        if mpacket == None:
+            self.handle_error()
+            return
+
+        if self.state == ProtocolState.READY:
+            if mpacket.iv != None:
+                self.peer_aes = AES_CTR(self.key, mpacket.iv)
                 logging.info("get iv: %s" % hexlify(mpacket.iv))
 
                 if self.is_server():
-                    self.write(PacketFactory.create_syn_packet(self.iv), raw=True)
+                    self.write(PacketFactory.create_syn_packet(self.iv))
+
+                self.state = ProtocolState.RUNNING
             else:
-                self.write(PacketFactory.create_rst_packet())
-                self.state = ProtocolState.ERROR
-                self.transport.loseConnection()
+                self.handle_error()
         elif self.state == ProtocolState.RUNNING:
-            mpacket = self.parse(string)
-            if mpacket == None:
-                logging.error("error on RUNNING state")
-                self.handle_error()
-            elif mpacket.iv:
-                logging.error("iv on RUNNING state, %s" % hexlify(mpacket.iv))
-                self.handle_error()
-            elif mpacket.flags == PacketFlag.DATA:
+            if mpacket.flags == PacketFlag.DATA:
                 self.handle_data_packet(mpacket)
-            elif mpacket.flags == PacketFlag.RST:
-                port = mpacket.port
-                if port in self.d:
-                    del self.d[port]
-            elif mpacket.flags == PacketFlag.FIN:
-                if self.is_server():
-                    port = mpacket.port
-                    if port in self.d:
-                        del self.d[port]
+            elif mpacket.flags in [PacketFlag.RST, PacketFlag.FIN]:
+                if mpacket.port in self.d:
+                    del self.d[mpacket.port]
         else:
             self.handle_error()
 
@@ -98,48 +75,66 @@ class MelkwegServerProtocolBase(Int32StringReceiver):
         self.state = ProtocolState.ERROR
         self.transport.loseConnection()
 
-    def handle_lose_connection(self, port):
-        self.write(PacketFactory.create_fin_packet(port))
-        logging.debug("shutdown port %d" % port)
-        if port in self.d:
-            del self.d[port]
-        else:
-            logging.error("port %d not in dict" % port)
-
-    def handle_data_packet(self, mpacket):
-        port = mpacket.port
-        if self.is_server():
-            if port not in self.d:
-                socks = SOCKSv5()
-                socks.transport = MelkwegProtocolTransportAdapter(self, port)
-                self.d[port] = socks
-            self.d[port].dataReceived(mpacket.data)
-        elif self.is_client():
-            if port in self.d:
-                self.d[port].transport.write(mpacket.data)
-
-    def connectionLost(self, reason):
-        if self.is_client():
-            logging.error("server connection is lost")
-            for (port, proxy) in self.d.items():
-                proxy.transport.loseConnection()
-
-    def parse(self, string, raw=False):
+    def parse(self, string):
         mpacket = MPacket()
         try:
-            if raw:
+            if self.state == ProtocolState.READY:
                 mpacket.ParseFromString(string)
             else:
-                mpacket.ParseFromString(self.read(string))
+                plain_data = self.peer_aes.decrypt(string)
+                mpacket.ParseFromString(plain_data)
             return mpacket
         except Exception, e:
             logging.error(e)
             return None
 
+class MelkwegServerOutgoingProtocol(protocol.Protocol):
+    def __init__(self, peersock, port):
+        self.peersock = peersock
+        self.port = port
+        self.peersock.d[self.port] = self
 
+    def dataReceived(self, data):
+        self.peersock.write(PacketFactory.create_data_packet(self.port, data))
 
-class MelkwegServerProtocol(MelkwegServerProtocolBase):
+    def connectionLost(self, reason):
+        if reason.check(error.ConnectionDone):
+            self.peersock.write(PacketFactory.create_fin_packet(self.port))
+        else:
+            self.peersock.write(PacketFactory.create_rst_packet(self.port))
+
+class MelkwegServerProtocol(MelkwegProtocolBase):
     SERVER = True
+    def connectionMade(self):
+        logging.debug("connection is made")
 
-class MelkwegClientProtocol(MelkwegServerProtocolBase):
+    def connectionLost(self, reason):
+        logging.error("connection to client %s is lost" % self.transport.getPeer())
+
+    def handle_data_packet(self, mpacket):
+        port = mpacket.port
+
+        if port not in self.d:
+            protocol.ClientCreator(reactor, MelkwegServerOutgoingProtocol, self, port)\
+                    .connectTCP(config.SERVER_SOCKS5_ADDR, config.SERVER_SOCKS5_PORT)\
+                    .addCallback(lambda _: self.d[port].transport.write(mpacket.data))
+        else:
+            self.d[port].transport.write(mpacket.data)
+
+class MelkwegClientProtocol(MelkwegProtocolBase):
     CLIENT = True
+    def connectionMade(self):
+        logging.debug("connection is made")
+        self.write(PacketFactory.create_syn_packet(self.iv))
+
+    def connectionLost(self, reason):
+        logging.error("connection to server is lost")
+        for (port, proxy) in self.d.items():
+            proxy.transport.loseConnection()
+
+    def handle_data_packet(self, mpacket):
+        port = mpacket.port
+        if port in self.d:
+            self.d[port].transport.write(mpacket.data)
+        else:
+            self.write(PacketFactory.create_rst_packet(port))
