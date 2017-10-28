@@ -9,5 +9,8 @@ WORKDIR /usr/src/app
 COPY . /usr/src/app
 RUN pip install -r requirements.txt
 
+# Expose port
+EXPOSE 20000
+
 # Start
 CMD [ "python", "src/server.py"]
