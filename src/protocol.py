@@ -9,7 +9,7 @@ from twisted.protocols.basic import Int32StringReceiver
 from packet_pb2 import MPacket
 
 import config
-from cipher import AES_CTR, nonce
+from cipher import AES_CTR, nonce, hexlify
 from socks5 import SOCKSv5
 from socks5_adapter import MelkwegProtocolTransportAdapter
 from packet_factory import PacketFactory, PacketFlag
@@ -27,7 +27,7 @@ class MelkwegServerProtocolBase(Int32StringReceiver):
         self.aes = AES_CTR(self.key, self.iv)
         self.state = ProtocolState.READY
         self.d = {} 
-        logging.info("self iv: %s" % self.iv)
+        logging.info("self iv: %s" % hexlify(self.iv))
 
     def write(self, packet, raw=False):
         data = packet.SerializeToString()
@@ -63,7 +63,7 @@ class MelkwegServerProtocolBase(Int32StringReceiver):
                 self.peer_aes = AES_CTR(self.key, mpacket.iv)
                 self.state = ProtocolState.RUNNING
 
-                logging.info("get iv: %s" % mpacket.iv)
+                logging.info("get iv: %s" % hexlify(mpacket.iv))
 
                 if self.is_server():
                     self.write(PacketFactory.create_syn_packet(self.iv), raw=True)
@@ -75,6 +75,9 @@ class MelkwegServerProtocolBase(Int32StringReceiver):
             mpacket = self.parse(string)
             if mpacket == None:
                 logging.error("error on RUNNING state")
+                self.handle_error()
+            elif mpacket.iv:
+                logging.error("iv on RUNNING state, %s" % hexlify(mpacket.iv))
                 self.handle_error()
             elif mpacket.flags == PacketFlag.DATA:
                 self.handle_data_packet(mpacket)
@@ -97,8 +100,11 @@ class MelkwegServerProtocolBase(Int32StringReceiver):
 
     def handle_lose_connection(self, port):
         self.write(PacketFactory.create_fin_packet(port))
+        logging.debug("shutdown port %d" % port)
         if port in self.d:
             del self.d[port]
+        else:
+            logging.error("port %d not in dict" % port)
 
     def handle_data_packet(self, mpacket):
         port = mpacket.port

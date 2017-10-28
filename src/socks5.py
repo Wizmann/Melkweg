@@ -223,6 +223,7 @@ class SOCKSv5(protocol.Protocol):
         self.state = STATE_CONNECT_PENDING
         if isinstance(addr, int):
             addr = Int2IP(addr)
+
         return protocol.ClientCreator(reactor, SOCKSv5Outgoing, self).connectTCP(addr, port)
 
     def connectCompleted(self, remotehost, remoteport):

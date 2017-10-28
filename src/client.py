@@ -29,6 +29,8 @@ class MelkwegLocalProxyProtocol(protocol.Protocol):
         logging.debug("outgoing buf size: %s" % len(buf))
         if self.outgoing.transport:
             self.outgoing.write(PacketFactory.create_data_packet(self.port, buf))
+        else:
+            self.transport.loseConnection()
 
     def connectionLost(self, reason):
         #self.outgoing.write(PacketFactory.create_fin_packet(self.port))
@@ -36,7 +38,8 @@ class MelkwegLocalProxyProtocol(protocol.Protocol):
 
 class MelkwegClientProtocolFactory(protocol.ReconnectingClientFactory):
     protocol = MelkwegClientProtocol
-    initialDelay = 10
+    initialDelay = 3
+    maxDelay = 10
     outgoing = None
 
     def __init__(self):
