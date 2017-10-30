@@ -10,7 +10,7 @@ fmt = "%(levelname)-8s %(asctime)-15s [%(filename)s:%(lineno)d] %(message)s"
 logging.basicConfig(format=fmt, level=logging.INFO)
 
 SERVER = "127.0.0.1"
-SERVER_PORT = 20000
+SERVER_PORT = 19999
 CLIENT_PORT = 20001
 KEY = "if you stand, if you are true"
 
