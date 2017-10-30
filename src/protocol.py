@@ -65,7 +65,8 @@ class MelkwegProtocolBase(Int32StringReceiver):
             if mpacket.flags == PacketFlag.DATA:
                 self.handle_data_packet(mpacket)
             elif mpacket.flags in [PacketFlag.RST, PacketFlag.FIN]:
-                if self.is_server:
+                logging.debug("connection on port %d will be terminated" % mpacket.port)
+                if self.is_server():
                     self.d[mpacket.port].transport.loseConnection()
                 if mpacket.port in self.d:
                     del self.d[mpacket.port]
@@ -100,6 +101,7 @@ class MelkwegServerOutgoingProtocol(protocol.Protocol):
         self.peersock.write(PacketFactory.create_data_packet(self.port, data))
 
     def connectionLost(self, reason):
+        logging.debug("outgoing protocol on port %d is lost: %s" % (self.port, reason))
         if reason.check(error.ConnectionDone):
             self.peersock.write(PacketFactory.create_fin_packet(self.port))
         else:
@@ -111,7 +113,7 @@ class MelkwegServerProtocol(MelkwegProtocolBase):
         logging.debug("connection is made")
 
     def connectionLost(self, reason):
-        logging.error("connection to client %s is lost" % self.transport.getPeer())
+        logging.error("connection to client %s is lost, %s" % (self.transport.getPeer(), reason))
 
     def handle_data_packet(self, mpacket):
         port = mpacket.port
