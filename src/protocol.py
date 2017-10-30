@@ -66,7 +66,7 @@ class MelkwegProtocolBase(Int32StringReceiver):
                 self.handle_data_packet(mpacket)
             elif mpacket.flags in [PacketFlag.RST, PacketFlag.FIN]:
                 logging.debug("connection on port %d will be terminated" % mpacket.port)
-                if self.is_server():
+                if self.is_server() and mpacket.port in self.d:
                     self.d[mpacket.port].transport.loseConnection()
                 if mpacket.port in self.d:
                     del self.d[mpacket.port]
