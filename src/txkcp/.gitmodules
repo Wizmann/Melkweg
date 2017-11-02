@@ -1,0 +1,3 @@
+[submodule "python-ikcp"]
+	path = python-ikcp
+	url = https://github.com/Wizmann/python-ikcp.git

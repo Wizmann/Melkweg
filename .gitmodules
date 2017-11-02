@@ -1,0 +1,3 @@
+[submodule "txkcp"]
+	path = txkcp
+	url = https://github.com/Wizmann/txkcp.git
