@@ -5,7 +5,7 @@ import logging
 from twisted.internet import protocol, reactor, defer
 
 import config
-from txkcp.src import txkcp
+import txkcp
 
 class KcpOutgoing(protocol.Protocol):
     def __init__(self, peersock, defer):
@@ -20,7 +20,7 @@ class KcpOutgoing(protocol.Protocol):
 
     def connectionLost(self, reason):
         logging.debug("connection lost: %s" % reason)
-        self.peersock.transport.loseConnection()
+        self.peersock.loseConnection()
         self.peersock.peersock = None
         self.peersock = None
         

@@ -17,7 +17,7 @@ KEY = "if you stand, if you are true"
 SERVER_SOCKS5_ADDR = "127.0.0.1"
 SERVER_SOCKS5_PORT = 20002
 
-USE_KCP = True
+USE_KCP = False
 
 CLIENT_KCP_ADDR = "127.0.0.1"
 CLIENT_KCP_PORT = 20010

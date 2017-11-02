@@ -78,6 +78,7 @@ def Int2IP(ipnum):
 class SOCKSv5Outgoing(protocol.Protocol):
     def __init__(self, peersock):
         assert peersock
+        logging.debug("socks5 outgoing init")
         self.peersock = peersock
         self.peersock.peersock = self
 

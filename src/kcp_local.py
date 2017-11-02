@@ -5,7 +5,7 @@ import logging
 from twisted.internet import protocol, reactor, defer
 
 import config
-from txkcp.src import txkcp
+import txkcp
 
 class ClientOutgoing(txkcp.Protocol):
     def __init__(self, addr, peer, conv):
@@ -16,6 +16,7 @@ class ClientOutgoing(txkcp.Protocol):
         txkcp.Protocol.__init__(self, self.addr, conv)
 
     def dataReceived(self, data):
+        logging.debug("data received: %d" % len(data))
         self.peer.transport.write(data)
 
 class LocalProxyProtocol(protocol.Protocol):
