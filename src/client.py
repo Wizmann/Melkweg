@@ -6,6 +6,7 @@ from twisted.internet import defer, protocol, reactor, error
 import config
 from protocol import MelkwegClientProtocol
 from packet_factory import PacketFactory
+from kcp_local import LocalProxyProtocolFactory as KcpLocalProxyProtocolFactory
 
 class MelkwegLocalProxyProtocol(protocol.Protocol):
     def __init__(self, addr, port, outgoing):
@@ -60,9 +61,9 @@ class MelkwegClientProtocolFactory(protocol.ReconnectingClientFactory):
 class MelkwegLocalProxyFactory(protocol.Factory):
     protocol = MelkwegLocalProxyProtocol
 
-    def __init__(self):
+    def __init__(self, host, port):
         reactor.connectTCP(
-                config.SERVER, config.SERVER_PORT, MelkwegClientProtocolFactory())
+                host, port, MelkwegClientProtocolFactory())
 
     def buildProtocol(self, addr):
         logging.debug("build protocol for %s" % addr)
@@ -71,5 +72,14 @@ class MelkwegLocalProxyFactory(protocol.Factory):
         return protocol
 
 if __name__ == '__main__':
-    reactor.listenTCP(config.CLIENT_PORT, MelkwegLocalProxyFactory())
+    if config.USE_KCP:
+        reactor.listenTCP(config.CLIENT_KCP_PORT, KcpLocalProxyProtocolFactory())
+        reactor.listenTCP(
+                config.CLIENT_PORT, 
+                MelkwegLocalProxyFactory(config.CLIENT_KCP_ADDR, config.CLIENT_KCP_PORT))
+    else:
+        reactor.listenTCP(
+                config.CLIENT_PORT, 
+                MelkwegLocalProxyFactory(config.SERVER, config.SERVER_PORT))
+
     reactor.run()

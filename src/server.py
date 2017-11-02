@@ -18,6 +18,14 @@ class MelkwegSocks5ProtocolFactory(protocol.Factory):
     protocol = SOCKSv5
 
 if __name__ == '__main__':
-    reactor.listenTCP(config.SERVER_PORT, MelkwegServerFactory())
-    reactor.listenTCP(config.SERVER_SOCKS5_PORT, MelkwegSocks5ProtocolFactory())
+    if config.USE_KCP:
+        from kcp_server import ServerProtocolFactory as KcpServerProtocolFactory
+
+        reactor.listenTCP(config.SERVER_PORT, MelkwegServerFactory())
+        reactor.listenTCP(config.SERVER_SOCKS5_PORT, MelkwegSocks5ProtocolFactory())
+        reactor.listenUDP(config.SERVER_KCP_PORT, KcpServerProtocolFactory())
+    else:
+        reactor.listenTCP(config.SERVER_PORT, MelkwegServerFactory())
+        reactor.listenTCP(config.SERVER_SOCKS5_PORT, MelkwegSocks5ProtocolFactory())
+
     reactor.run()
