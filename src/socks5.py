@@ -92,7 +92,6 @@ class SOCKSv5Outgoing(protocol.Protocol):
         self.peersock.transport.loseConnection()
         self.peersock.peersock = None
         self.peersock = None
-        self.transport.loseConnection()
         
     def dataReceived(self, buf):
         logging.debug("data received: %d" % len(buf))
@@ -223,6 +222,7 @@ class SOCKSv5(protocol.Protocol):
         self.state = STATE_CONNECT_PENDING
         if isinstance(addr, int):
             addr = Int2IP(addr)
+
         return protocol.ClientCreator(reactor, SOCKSv5Outgoing, self).connectTCP(addr, port)
 
     def connectCompleted(self, remotehost, remoteport):
@@ -271,10 +271,8 @@ class SOCKSv5(protocol.Protocol):
         if self.state == STATE_REQUEST:
             self._parseRequest()
 
-
-factory = protocol.Factory()
-factory.protocol = SOCKSv5
-
 if __name__ == "__main__":
+    factory = protocol.Factory()
+    factory.protocol = SOCKSv5
     reactor.listenTCP(8888, factory)
     reactor.run()

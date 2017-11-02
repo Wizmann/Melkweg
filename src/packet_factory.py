@@ -1,6 +1,5 @@
 #coding=utf-8
 
-from enum import Enum
 from packet_pb2 import MPacket
 from cipher import nonce
 

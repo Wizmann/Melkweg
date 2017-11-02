@@ -11,3 +11,4 @@ pytest==3.2.3
 six==1.11.0
 Twisted==17.9.0
 zope.interface==4.4.3
+web.py>=0.38
