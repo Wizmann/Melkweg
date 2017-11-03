@@ -6,6 +6,7 @@ from twisted.internet import protocol, reactor, defer
 
 import config
 import txkcp
+import ikcp
 
 class KcpOutgoing(protocol.Protocol):
     def __init__(self, peersock, defer):
@@ -29,6 +30,8 @@ class KcpOutgoing(protocol.Protocol):
         self.peersock.send(buf)
 
 class ServerProtocol(txkcp.Protocol):
+    mode=ikcp.FAST_MODE
+
     def startProtocol(self, defer):
         logging.debug("kcp server protocol is starting")
         protocol.ClientCreator(reactor, KcpOutgoing, self, defer)\
