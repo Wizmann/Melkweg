@@ -7,10 +7,15 @@ WORKDIR /usr/src/app
 
 # Bundle app source
 COPY . /usr/src/app
-RUN pip install -r requirements.txt
+
+# Install dependencies
+RUN build.sh
 
 # Expose port
-EXPOSE 20000
+# Should be enough for Toni
+EXPOSE 19985-20025
 
-# Start
-CMD [ "python", "src/server.py"]
+# Start tcp server by default 
+CMD server.sh
+# Alternatively, start kcp server
+# CMD kcp_server.sh
