@@ -44,3 +44,10 @@ class PacketFactory(object):
         packet.flags = PacketFlag.FIN
         packet.port = port
         return packet
+
+    @classmethod
+    def create_liv_packet(self):
+        packet = MPacket()
+        packet.flags = PacketFlag.LIV
+        return packet
+

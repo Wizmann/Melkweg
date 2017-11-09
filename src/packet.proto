@@ -12,4 +12,7 @@ message MPacket {
 
     string user = 20;
     string secret = 21;
+
+    uint64 client_time = 30;
+    uint64 server_time = 31;
 }

@@ -1,9 +1,11 @@
 #coding=utf-8 
 from enum import Enum
+import time
 import logging
 
 from twisted.internet import defer, protocol, reactor, error
 from twisted.protocols.basic import Int32StringReceiver
+from twisted.protocols.policies import TimeoutMixin
 
 from packet_pb2 import MPacket
 
@@ -18,14 +20,33 @@ class ProtocolState(Enum):
     DONE = 3
     ERROR = 4
 
-class MelkwegProtocolBase(Int32StringReceiver):
+def to_millisec(sec):
+    return sec / 1000.
+
+def timestamp():
+    return int(time.time() * 1000)
+
+class MelkwegProtocolBase(Int32StringReceiver, TimeoutMixin):
     def __init__(self):
         self.key = config.KEY
         self.iv = nonce(16)
         self.aes = AES_CTR(self.key, self.iv)
         self.state = ProtocolState.READY
         self.d = {} 
+        self.setTimeout(config.TIMEOUT)
         logging.info("self iv: %s" % hexlify(self.iv))
+
+    def heartbeat(self):
+        assert self.is_client()
+        try:
+            packet = PacketFactory.create_liv_packet()
+            packet.client_time = timestamp()
+
+            self.write(packet)
+            reactor.callLater(config.HEARTBEAT, self.heartbeat)
+        except Exception, e:
+            logging.error("error on heartbeat: %s" % e)
+            reactor.callLater(config.HEARTBEAT, self.heartbeat)
 
     def is_server(self):
         return 'SERVER' in self.__class__.__dict__
@@ -47,7 +68,6 @@ class MelkwegProtocolBase(Int32StringReceiver):
         mpacket = self.parse(string)
 
         if mpacket == None:
-            self.handle_error()
             return
 
         if self.state == ProtocolState.READY:
@@ -59,17 +79,30 @@ class MelkwegProtocolBase(Int32StringReceiver):
                     self.write(PacketFactory.create_syn_packet(self.iv))
 
                 self.state = ProtocolState.RUNNING
-            else:
-                self.handle_error()
+
+                if self.is_client():
+                    self.heartbeat()
+
         elif self.state == ProtocolState.RUNNING:
             if mpacket.flags == PacketFlag.DATA:
-                self.handle_data_packet(mpacket)
+                self.handleDataPacket(mpacket)
             elif mpacket.flags in [PacketFlag.RST, PacketFlag.FIN]:
                 logging.debug("connection on port %d will be terminated" % mpacket.port)
                 if self.is_server() and mpacket.port in self.d:
-                    self.d[mpacket.port].transport.loseConnection()
+                    if self.d[mpacket.port].transport:
+                        self.d[mpacket.port].transport.loseConnection()
                 if mpacket.port in self.d:
                     del self.d[mpacket.port]
+            elif mpacket.flags == PacketFlag.LIV:
+                if self.is_server():
+                    packet = PacketFactory.create_liv_packet()
+                    packet.client_time = mpacket.client_time
+                    packet.server_time = timestamp()
+                    self.write(packet)
+
+                if self.is_client():
+                    client_time = mpacket.client_time
+                    logging.warn("[HEARTBEAT] ping = %d ms" % (timestamp() - client_time))
         else:
             self.handle_error()
 
@@ -115,7 +148,7 @@ class MelkwegServerProtocol(MelkwegProtocolBase):
     def connectionLost(self, reason):
         logging.error("connection to client %s is lost, %s" % (self.transport.getPeer(), reason))
 
-    def handle_data_packet(self, mpacket):
+    def handleDataPacket(self, mpacket):
         port = mpacket.port
 
         if port not in self.d:
@@ -136,7 +169,7 @@ class MelkwegClientProtocol(MelkwegProtocolBase):
         for (port, proxy) in self.d.items():
             proxy.transport.loseConnection()
 
-    def handle_data_packet(self, mpacket):
+    def handleDataPacket(self, mpacket):
         port = mpacket.port
         if port in self.d:
             self.d[port].transport.write(mpacket.data)

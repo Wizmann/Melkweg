@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='packet.proto',
   package='Melkweg',
   syntax='proto3',
-  serialized_pb=_b('\n\x0cpacket.proto\x12\x07Melkweg\"o\n\x07MPacket\x12\n\n\x02iv\x18\x01 \x01(\x0c\x12\x0c\n\x04port\x18\n \x01(\r\x12\r\n\x05\x66lags\x18\x0b \x01(\r\x12\x0c\n\x04\x64\x61ta\x18\x0c \x01(\x0c\x12\x0f\n\x07padding\x18\r \x01(\x0c\x12\x0c\n\x04user\x18\x14 \x01(\t\x12\x0e\n\x06secret\x18\x15 \x01(\tb\x06proto3')
+  serialized_pb=_b('\n\x0cpacket.proto\x12\x07Melkweg\"\x99\x01\n\x07MPacket\x12\n\n\x02iv\x18\x01 \x01(\x0c\x12\x0c\n\x04port\x18\n \x01(\r\x12\r\n\x05\x66lags\x18\x0b \x01(\r\x12\x0c\n\x04\x64\x61ta\x18\x0c \x01(\x0c\x12\x0f\n\x07padding\x18\r \x01(\x0c\x12\x0c\n\x04user\x18\x14 \x01(\t\x12\x0e\n\x06secret\x18\x15 \x01(\t\x12\x13\n\x0b\x63lient_time\x18\x1e \x01(\x04\x12\x13\n\x0bserver_time\x18\x1f \x01(\x04\x62\x06proto3')
 )
 
 
@@ -81,6 +81,20 @@ _MPACKET = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    _descriptor.FieldDescriptor(
+      name='client_time', full_name='Melkweg.MPacket.client_time', index=7,
+      number=30, type=4, cpp_type=4, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='server_time', full_name='Melkweg.MPacket.server_time', index=8,
+      number=31, type=4, cpp_type=4, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -93,8 +107,8 @@ _MPACKET = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=25,
-  serialized_end=136,
+  serialized_start=26,
+  serialized_end=179,
 )
 
 DESCRIPTOR.message_types_by_name['MPacket'] = _MPACKET

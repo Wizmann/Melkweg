@@ -6,6 +6,7 @@ from twisted.internet import protocol, reactor, defer
 
 import config
 import txkcp
+import random
 
 class ClientOutgoing(txkcp.Protocol):
     def __init__(self, addr, peer, conv):
@@ -22,11 +23,14 @@ class ClientOutgoing(txkcp.Protocol):
 class LocalProxyProtocol(protocol.Protocol):
     def connectionMade(self):
         self.srv_addr = (config.SERVER_KCP_ADDR, config.SERVER_KCP_PORT)
-        conv = self.transport.getHost().port
+        conv = random.randint(10000, 30000)
         reactor.listenUDP(0, ClientOutgoing(self.srv_addr, self, conv))
 
     def dataReceived(self, data):
         self.outgoing.send(data)
+
+    def connctionLost(self, reason):
+        logging.error("connection lost for reason: %s" % reason)
 
 class LocalProxyProtocolFactory(protocol.ServerFactory):
     protocol = LocalProxyProtocol

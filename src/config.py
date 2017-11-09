@@ -9,6 +9,9 @@ observer.start()
 fmt = "%(levelname)-8s %(asctime)-15s [%(filename)s:%(lineno)d] %(message)s"
 logging.basicConfig(format=fmt, level=logging.INFO)
 
+TIMEOUT = 60
+HEARTBEAT = 10
+
 SERVER = "127.0.0.1"
 SERVER_PORT = 19999
 CLIENT_PORT = 20001
