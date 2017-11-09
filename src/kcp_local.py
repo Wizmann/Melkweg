@@ -4,6 +4,7 @@ import txkcp
 import logging
 from twisted.internet import protocol, reactor, defer
 
+import ikcp
 import config
 import txkcp
 import random
@@ -14,7 +15,8 @@ class ClientOutgoing(txkcp.Protocol):
         self.peer = peer
         self.peer.outgoing = self
 
-        txkcp.Protocol.__init__(self, self.addr, conv)
+        txkcp.Protocol.__init__(
+                self, self.addr, conv, wndsize=config.KCP_WINDOW_SIZE, mode=ikcp.FAST_MODE)
 
     def dataReceived(self, data):
         logging.debug("data received: %d" % len(data))
