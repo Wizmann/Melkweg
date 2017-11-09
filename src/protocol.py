@@ -103,6 +103,8 @@ class MelkwegProtocolBase(Int32StringReceiver, TimeoutMixin):
                 if self.is_client():
                     client_time = mpacket.client_time
                     logging.warn("[HEARTBEAT] ping = %d ms" % (timestamp() - client_time))
+
+                self.resetTimeout()
         else:
             self.handle_error()
 
