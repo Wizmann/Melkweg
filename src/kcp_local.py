@@ -10,6 +10,9 @@ import txkcp
 import random
 
 class ClientOutgoing(txkcp.Protocol):
+    mode=ikcp.FAST_MODE
+    wndsize = 1024 * 4
+
     def __init__(self, addr, peer, conv):
         self.addr = addr
         self.peer = peer

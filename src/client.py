@@ -1,5 +1,6 @@
 #coding=utf-8
 
+import random
 import logging
 from twisted.internet import defer, protocol, reactor, error
 
@@ -35,17 +36,11 @@ class MelkwegLocalProxyProtocol(protocol.Protocol):
             del self.outgoing.d[self.port]
 
 class MelkwegClientProtocolFactory(protocol.ReconnectingClientFactory):
-    protocol = MelkwegClientProtocol
     initialDelay = 3
     maxDelay = 10
-    outgoing = None
-
-    def __init__(self):
-        MelkwegClientProtocolFactory.outgoing = MelkwegClientProtocol()
 
     def buildProtocol(self, addr):
-        if self.outgoing == None:
-            MelkwegClientProtocolFactory.outgoing = MelkwegClientProtocol()
+        self.outgoing = MelkwegClientProtocol()
         return self.outgoing
 
     def clientConnectionFailed(self, connector, reason):
@@ -59,16 +54,20 @@ class MelkwegClientProtocolFactory(protocol.ReconnectingClientFactory):
         protocol.ReconnectingClientFactory.clientConnectionLost(self, connector, reason)
 
 class MelkwegLocalProxyFactory(protocol.Factory):
-    protocol = MelkwegLocalProxyProtocol
-
     def __init__(self, host, port):
-        reactor.connectTCP(
-                host, port, MelkwegClientProtocolFactory())
+        self.outgoing = [
+            MelkwegClientProtocolFactory()
+            for i in xrange(config.CLIENT_OUTGOING_CONN_NUM)
+        ]
+
+        for outgoing in self.outgoing:
+            reactor.connectTCP(host, port, outgoing)
 
     def buildProtocol(self, addr):
         logging.debug("build protocol for %s" % addr)
+        outgoingProtocol = random.choice(self.outgoing)
         protocol = MelkwegLocalProxyProtocol(
-                addr.host, addr.port, MelkwegClientProtocolFactory.outgoing)
+                addr.host, addr.port, outgoingProtocol.outgoing)
         return protocol
 
 if __name__ == '__main__':

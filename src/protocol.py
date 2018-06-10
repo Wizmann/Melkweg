@@ -34,7 +34,7 @@ class MelkwegProtocolBase(Int32StringReceiver, TimeoutMixin):
         self.state = ProtocolState.READY
         self.d = {} 
         self.setTimeout(config.TIMEOUT)
-        logging.info("self iv: %s" % hexlify(self.iv))
+        logging.info("[%d] self iv: %s" % (id(self), hexlify(self.iv)))
 
     def heartbeat(self):
         assert self.is_client()
@@ -56,14 +56,14 @@ class MelkwegProtocolBase(Int32StringReceiver, TimeoutMixin):
 
     def write(self, packet):
         data = packet.SerializeToString()
-        logging.debug("write data [packet:%d|state:%s]" % (len(data), self.state))
+        logging.debug("[%d] write data [packet:%d|state:%s]" % (id(self), len(data), self.state))
         if self.state == ProtocolState.READY:
             self.sendString(data)
         else:
             self.sendString(self.aes.encrypt(data))
 
     def stringReceived(self, string):
-        logging.debug("string received: %d, state: %s" % (len(string), self.state))
+        logging.debug("[%d] string received: %d, state: %s" % (id(self), len(string), self.state))
 
         mpacket = self.parse(string)
 
@@ -73,7 +73,7 @@ class MelkwegProtocolBase(Int32StringReceiver, TimeoutMixin):
         if self.state == ProtocolState.READY:
             if mpacket.iv != None:
                 self.peer_aes = AES_CTR(self.key, mpacket.iv)
-                logging.info("get iv: %s" % hexlify(mpacket.iv))
+                logging.info("[%d] get iv: %s" % (id(self), hexlify(mpacket.iv)))
 
                 if self.is_server():
                     self.write(PacketFactory.create_syn_packet(self.iv))
@@ -102,7 +102,7 @@ class MelkwegProtocolBase(Int32StringReceiver, TimeoutMixin):
 
                 if self.is_client():
                     client_time = mpacket.client_time
-                    logging.warn("[HEARTBEAT] ping = %d ms" % (timestamp() - client_time))
+                    logging.warn("[%d][HEARTBEAT] ping = %d ms" % (id(self), timestamp() - client_time))
 
                 self.resetTimeout()
         else:
@@ -123,7 +123,7 @@ class MelkwegProtocolBase(Int32StringReceiver, TimeoutMixin):
                 mpacket.ParseFromString(plain_data)
             return mpacket
         except Exception, e:
-            logging.error(e)
+            logging.error('[%d]: %s' %(id(self), e))
             return None
 
 class MelkwegServerOutgoingProtocol(protocol.Protocol):
@@ -145,7 +145,7 @@ class MelkwegServerOutgoingProtocol(protocol.Protocol):
 class MelkwegServerProtocol(MelkwegProtocolBase):
     SERVER = True
     def connectionMade(self):
-        logging.debug("connection is made")
+        logging.debug("[%d] connection is made" % id(self))
 
     def connectionLost(self, reason):
         logging.error("connection to client %s is lost, %s" % (self.transport.getPeer(), reason))
