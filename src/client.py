@@ -7,7 +7,9 @@ from twisted.internet import defer, protocol, reactor, error
 import config
 from protocol import MelkwegClientProtocol
 from packet_factory import PacketFactory
-from kcp_local import LocalProxyProtocolFactory as KcpLocalProxyProtocolFactory
+
+if config.USE_KCP:
+    from kcp_local import LocalProxyProtocolFactory as KcpLocalProxyProtocolFactory
 
 class MelkwegLocalProxyProtocol(protocol.Protocol):
     def __init__(self, addr, port, outgoing):

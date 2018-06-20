@@ -1,13 +1,15 @@
 #coding=utf-8
 
-import txkcp
+import random
+import config
 import logging
+
+if config.USE_KCP:
+    import txkcp
+    import ikcp
+
 from twisted.internet import protocol, reactor, defer
 
-import ikcp
-import config
-import txkcp
-import random
 
 class ClientOutgoing(txkcp.Protocol):
     mode=ikcp.FAST_MODE
