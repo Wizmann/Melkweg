@@ -31,6 +31,7 @@ class KcpOutgoing(protocol.Protocol):
 
 class ServerProtocol(txkcp.Protocol):
     mode=ikcp.FAST_MODE
+    wndsize = 1024 * 4
 
     def startProtocol(self, defer):
         logging.debug("kcp server protocol is starting")

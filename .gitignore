@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
+nohup.out
 
 # Vim temp file
 *.sw[pon]

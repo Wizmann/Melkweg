@@ -68,12 +68,12 @@ class MelkwegProtocolBase(Int32StringReceiver, TimeoutMixin):
         mpacket = self.parse(string)
 
         if mpacket == None:
-            return
+            self.handle_error()
 
         if self.state == ProtocolState.READY:
             if mpacket.iv != None:
                 self.peer_aes = AES_CTR(self.key, mpacket.iv)
-                logging.info("[%d] get iv: %s" % (id(self), hexlify(mpacket.iv)))
+                logging.info("[%d] get iv: %s from %s" % (id(self), hexlify(mpacket.iv), self.transport.getPeer()))
 
                 if self.is_server():
                     self.write(PacketFactory.create_syn_packet(self.iv))
@@ -82,6 +82,8 @@ class MelkwegProtocolBase(Int32StringReceiver, TimeoutMixin):
 
                 if self.is_client():
                     self.heartbeat()
+            else:
+                self.handle_error()
 
         elif self.state == ProtocolState.RUNNING:
             if mpacket.flags == PacketFlag.DATA:
@@ -105,6 +107,8 @@ class MelkwegProtocolBase(Int32StringReceiver, TimeoutMixin):
                     logging.warn("[%d][HEARTBEAT] ping = %d ms" % (id(self), timestamp() - client_time))
 
                 self.resetTimeout()
+            else:
+                self.handle_error()
         else:
             self.handle_error()
 
@@ -124,7 +128,7 @@ class MelkwegProtocolBase(Int32StringReceiver, TimeoutMixin):
             return mpacket
         except Exception, e:
             logging.error('[%d]: %s' %(id(self), e))
-            return None
+            self.handle_error()
 
 class MelkwegServerOutgoingProtocol(protocol.Protocol):
     def __init__(self, peersock, port):
