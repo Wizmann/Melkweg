@@ -272,6 +272,10 @@ class SOCKSv5(protocol.Protocol):
         if self.state == STATE_REQUEST:
             self._parseRequest()
 
+    def connectionLost(self, reason):
+        if self.peersock and self.peersock.transport:
+            self.peersock.transport.loseConnection()
+
 if __name__ == "__main__":
     factory = protocol.Factory()
     factory.protocol = SOCKSv5

@@ -69,6 +69,7 @@ class MelkwegProtocolBase(Int32StringReceiver, TimeoutMixin):
 
         if mpacket == None:
             self.handle_error()
+            return
 
         if self.state == ProtocolState.READY:
             if mpacket.iv != None:
@@ -91,9 +92,6 @@ class MelkwegProtocolBase(Int32StringReceiver, TimeoutMixin):
             elif mpacket.flags in [PacketFlag.RST, PacketFlag.FIN]:
                 logging.debug("connection on port %d will be terminated" % mpacket.port)
                 if self.is_server() and mpacket.port in self.d:
-                    if self.d[mpacket.port].transport:
-                        self.d[mpacket.port].transport.loseConnection()
-                if mpacket.port in self.d:
                     del self.d[mpacket.port]
             elif mpacket.flags == PacketFlag.LIV:
                 if self.is_server():
@@ -102,7 +100,7 @@ class MelkwegProtocolBase(Int32StringReceiver, TimeoutMixin):
                     packet.server_time = timestamp()
                     self.write(packet)
 
-                if self.is_client():
+                elif self.is_client():
                     client_time = mpacket.client_time
                     logging.warn("[%d][HEARTBEAT] ping = %d ms" % (id(self), timestamp() - client_time))
 
@@ -116,6 +114,14 @@ class MelkwegProtocolBase(Int32StringReceiver, TimeoutMixin):
         logging.error("handle error")
         self.state = ProtocolState.ERROR
         self.transport.loseConnection()
+        for outgoing in self.d.values():
+            outgoing.transport.loseConnection()
+
+    def timeoutConnection(self):
+        logging.error("protocol timeout")
+        self.transport.loseConnection()
+        for outgoing in self.d.values():
+            outgoing.transport.loseConnection()
 
     def parse(self, string):
         mpacket = MPacket()
@@ -152,15 +158,20 @@ class MelkwegServerProtocol(MelkwegProtocolBase):
         logging.debug("[%d] connection is made" % id(self))
 
     def connectionLost(self, reason):
+        for (port, outgoing) in self.d.items():
+            outgoing.transport.loseConnection()
+
         logging.error("connection to client %s is lost, %s" % (self.transport.getPeer(), reason))
 
     def handleDataPacket(self, mpacket):
         port = mpacket.port
 
         if port not in self.d:
+            self.transport.stopReading()
             protocol.ClientCreator(reactor, MelkwegServerOutgoingProtocol, self, port)\
                     .connectTCP(config.SERVER_SOCKS5_ADDR, config.SERVER_SOCKS5_PORT)\
-                    .addCallback(lambda _: self.d[port].transport.write(mpacket.data))
+                    .addCallback(lambda _: self.d[port].transport.write(mpacket.data))\
+                    .addBoth(lambda _: self.transport.startReading())
         else:
             self.d[port].transport.write(mpacket.data)
 
