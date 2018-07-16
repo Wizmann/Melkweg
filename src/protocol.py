@@ -121,7 +121,8 @@ class MelkwegProtocolBase(Int32StringReceiver, TimeoutMixin):
         logging.error("protocol timeout")
         self.transport.loseConnection()
         for outgoing in self.d.values():
-            outgoing.transport.loseConnection()
+            if outgoing.transport:
+                outgoing.transport.loseConnection()
 
     def parse(self, string):
         mpacket = MPacket()
@@ -159,7 +160,8 @@ class MelkwegServerProtocol(MelkwegProtocolBase):
 
     def connectionLost(self, reason):
         for (port, outgoing) in self.d.items():
-            outgoing.transport.loseConnection()
+            if outgoing.transport:
+                outgoing.transport.loseConnection()
 
         logging.error("connection to client %s is lost, %s" % (self.transport.getPeer(), reason))
 
