@@ -119,7 +119,8 @@ class MelkwegProtocolBase(Int32StringReceiver, TimeoutMixin):
 
     def timeoutConnection(self):
         logging.error("protocol timeout")
-        self.transport.loseConnection()
+        if self.transport:
+            self.transport.loseConnection()
         for outgoing in self.d.values():
             if outgoing.transport:
                 outgoing.transport.loseConnection()
