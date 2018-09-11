@@ -25,8 +25,10 @@ THE SOFTWARE.
 $Id: socks5.py 31 2007-12-21 00:08:34Z fabio.forno $
 """
 
+import config
 from twisted import internet
 from twisted.internet import protocol, reactor
+from twisted.protocols.policies import TimeoutMixin
 import struct
 import logging
 
@@ -75,18 +77,21 @@ def Int2IP(ipnum):
     o4 = int(ipnum) % 256
     return '%(o1)s.%(o2)s.%(o3)s.%(o4)s' % locals()
 
-class SOCKSv5Outgoing(protocol.Protocol):
+class SOCKSv5Outgoing(protocol.Protocol, TimeoutMixin):
     def __init__(self, peersock):
         assert peersock
         logging.debug("socks5 outgoing init")
         self.peersock = peersock
         self.peersock.peersock = self
+        self.setTimeout(config.SOCKS5_OUTGOING_PROTOCOL_TIMEOUT)
 
     def connectionMade(self):
         ipaddr = self.transport.getPeer()
         _invalid_, hostname, port = ipaddr.type, ipaddr.host, ipaddr.port
         logging.debug("connection made on %s:%d" % (hostname, port))
+        self.transport.registerProducer(self.peersock.transport, streaming=False)
         self.peersock.connectCompleted(hostname, port)
+        self.resetTimeout()
 
     def connectionLost(self, reason):
         logging.debug("connection lost: %s" % reason)
@@ -97,6 +102,7 @@ class SOCKSv5Outgoing(protocol.Protocol):
     def dataReceived(self, buf):
         logging.debug("data received: %d" % len(buf))
         self.peersock.transport.write(buf)
+        self.resetTimeout()
 
 class SOCKSv5(protocol.Protocol):
     def __init__(self):
