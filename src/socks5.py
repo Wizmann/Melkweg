@@ -89,12 +89,24 @@ class SOCKSv5Outgoing(protocol.Protocol, TimeoutMixin):
         ipaddr = self.transport.getPeer()
         _invalid_, hostname, port = ipaddr.type, ipaddr.host, ipaddr.port
         logging.debug("connection made on %s:%d" % (hostname, port))
-        self.transport.registerProducer(self.peersock.transport, streaming=False)
+        self.peersock.transport.registerProducer(self, streaming=True)
         self.peersock.connectCompleted(hostname, port)
         self.resetTimeout()
 
+    def pauseProducing(self):
+        self.transport.stopReading()
+        self.transport.stopWriting()
+
+    def resumeProducing(self):
+        self.transport.startReading()
+        self.transport.startWriting()
+
+    def stopProducing(self):
+        self.transport.abortConnection()
+
     def connectionLost(self, reason):
         logging.debug("connection lost: %s" % reason)
+        self.peersock.transport.unregisterProducer()
         self.peersock.transport.loseConnection()
         self.peersock.peersock = None
         self.peersock = None

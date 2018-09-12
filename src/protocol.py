@@ -113,17 +113,14 @@ class MelkwegProtocolBase(Int32StringReceiver, TimeoutMixin):
     def handle_error(self):
         logging.error("handle error")
         self.state = ProtocolState.ERROR
-        self.transport.loseConnection()
+        if self.transport:
+            self.transport.loseConnection()
         for outgoing in self.d.values():
             outgoing.transport.loseConnection()
 
     def timeoutConnection(self):
         logging.error("protocol timeout")
-        if self.transport:
-            self.transport.loseConnection()
-        for outgoing in self.d.values():
-            if outgoing.transport:
-                outgoing.transport.loseConnection()
+        self.handle_error()
 
     def parse(self, string):
         mpacket = MPacket()
@@ -158,6 +155,8 @@ class MelkwegServerProtocol(MelkwegProtocolBase):
     SERVER = True
     def connectionMade(self):
         logging.debug("[%d] connection is made" % id(self))
+        if self.is_server():
+            self.transport.registerProducer(self, streaming=True)
 
     def connectionLost(self, reason):
         for (port, outgoing) in self.d.items():
@@ -177,6 +176,20 @@ class MelkwegServerProtocol(MelkwegProtocolBase):
                     .addBoth(lambda _: self.transport.startReading())
         else:
             self.d[port].transport.write(mpacket.data)
+
+    def pauseProducing(self):
+        for outgoing in self.d.values():
+            if outgoing.transport:
+                outgoing.transport.stopReading()
+
+    def resumeProducing(self):
+        for outgoing in self.d.values():
+            if outgoing.transport:
+                outgoing.transport.startReading()
+
+    def stopProducing(self):
+        self.handle_error()
+
 
 class MelkwegClientProtocol(MelkwegProtocolBase):
     CLIENT = True
