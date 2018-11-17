@@ -195,7 +195,6 @@ class MelkwegServerProtocol(MelkwegProtocolBase):
         for outgoing in self.d.values():
             if outgoing.transport:
                 outgoing.transport.startReading()
-                outgoing.transport.dataReceived('')
 
     def stopProducing(self):
         self.handle_error()
