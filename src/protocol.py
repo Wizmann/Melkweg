@@ -141,6 +141,15 @@ class MelkwegServerOutgoingProtocol(protocol.Protocol):
         self.port = port
         self.peersock.d[self.port] = self
 
+    def resumeProducing(self):
+        self.transport.startReading()
+
+    def pauseProducing(self):
+        self.transport.stopReading()
+
+    def stopProducing(self):
+        self.transport.abortConnection()
+
     def dataReceived(self, data):
         self.peersock.write(PacketFactory.create_data_packet(self.port, data))
 
@@ -186,10 +195,10 @@ class MelkwegServerProtocol(MelkwegProtocolBase):
         for outgoing in self.d.values():
             if outgoing.transport:
                 outgoing.transport.startReading()
+                outgoing.transport.dataReceived('')
 
     def stopProducing(self):
         self.handle_error()
-
 
 class MelkwegClientProtocol(MelkwegProtocolBase):
     CLIENT = True

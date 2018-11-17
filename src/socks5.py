@@ -78,6 +78,8 @@ def Int2IP(ipnum):
     return '%(o1)s.%(o2)s.%(o3)s.%(o4)s' % locals()
 
 class SOCKSv5Outgoing(protocol.Protocol, TimeoutMixin):
+    paused = False
+
     def __init__(self, peersock):
         assert peersock
         logging.debug("socks5 outgoing init")
@@ -93,17 +95,6 @@ class SOCKSv5Outgoing(protocol.Protocol, TimeoutMixin):
         self.peersock.connectCompleted(hostname, port)
         self.resetTimeout()
 
-    def pauseProducing(self):
-        self.transport.stopReading()
-        self.transport.stopWriting()
-
-    def resumeProducing(self):
-        self.transport.startReading()
-        self.transport.startWriting()
-
-    def stopProducing(self):
-        self.transport.abortConnection()
-
     def connectionLost(self, reason):
         logging.debug("connection lost: %s" % reason)
         self.peersock.transport.unregisterProducer()
@@ -115,6 +106,19 @@ class SOCKSv5Outgoing(protocol.Protocol, TimeoutMixin):
         logging.debug("data received: %d" % len(buf))
         self.peersock.transport.write(buf)
         self.resetTimeout()
+
+    def pauseProducing(self):
+        self.paused = True
+        self.transport.pauseProducing()
+
+    def resumeProducing(self):
+        self.paused = False
+        self.transport.resumeProducing()
+        self.dataReceived('')
+
+    def stopProducing(self):
+        self.paused = True
+        self.transport.stopProducing()
 
 class SOCKSv5(protocol.Protocol):
     def __init__(self):
