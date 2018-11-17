@@ -188,12 +188,12 @@ class MelkwegServerProtocol(MelkwegProtocolBase):
 
     def pauseProducing(self):
         for outgoing in self.d.values():
-            if outgoing.transport:
+            if outgoing.transport and outgoing.transport.fileno() > 0:
                 outgoing.transport.stopReading()
 
     def resumeProducing(self):
         for outgoing in self.d.values():
-            if outgoing.transport:
+            if outgoing.transport and outgoing.transport.fileno() > 0:
                 outgoing.transport.startReading()
 
     def stopProducing(self):
