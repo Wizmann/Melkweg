@@ -8,6 +8,7 @@ import random
 from Crypto.Cipher import AES
 from Crypto.Util import Counter
 import Crypto.Hash.MD5
+from Crypto.Util.number import bytes_to_long
 
 def digest(plain_text):
     h = Crypto.Hash.MD5.new()
@@ -31,7 +32,7 @@ class ICipher(object):
 
 class AES_CTR(ICipher):
     def __init__(self, key, iv):
-        ctr = Counter.new(128)
+        ctr = Counter.new(128, initial_value=bytes_to_long(iv))
         self.aes = AES.new(digest(key), AES.MODE_CTR, counter=ctr)
 
     def encrypt(self, plain_data):
