@@ -1,4 +1,4 @@
-attrs==17.2.0
+attrs>=17.4.0
 Automat==0.6.0
 constantly==15.1.0
 enum34==1.1.6
@@ -9,6 +9,6 @@ py==1.4.34
 pycryptodome==3.6.6
 pytest==3.2.3
 six==1.11.0
-Twisted==17.9.0
+twisted==19.2.1
 zope.interface==4.4.3
 web.py>=0.38
