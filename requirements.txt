@@ -9,6 +9,6 @@ py==1.4.34
 pycryptodome==3.6.6
 pytest==3.2.3
 six==1.11.0
-twisted==19.2.1
+twisted>=19.7.0
 zope.interface==4.4.3
 web.py>=0.38
