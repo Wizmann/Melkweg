@@ -11,6 +11,7 @@ from packet_pb2 import MPacket
 
 import config
 from cipher import AES_CTR, nonce, hexlify
+from cipher import factory as cipher_factory
 from socks5 import SOCKSv5
 from packet_factory import PacketFactory, PacketFlag
 
@@ -30,9 +31,10 @@ class MelkwegProtocolBase(Int32StringReceiver, TimeoutMixin):
     def __init__(self):
         self.key = config.KEY
         self.iv = nonce(16)
-        self.aes = AES_CTR(self.key, self.iv)
+        self.aes = cipher_factory(config.CIPHER, self.key, self.iv)
         self.state = ProtocolState.READY
         self.d = {} 
+        self.lock = defer.DeferredLock()
         self.setTimeout(config.TIMEOUT)
         logging.info("[%d] self iv: %s" % (id(self), hexlify(self.iv)))
 
@@ -73,7 +75,7 @@ class MelkwegProtocolBase(Int32StringReceiver, TimeoutMixin):
 
         if self.state == ProtocolState.READY:
             if mpacket.iv != None:
-                self.peer_aes = AES_CTR(self.key, mpacket.iv)
+                self.peer_aes = cipher_factory(config.CIPHER, self.key, mpacket.iv)
                 logging.info("[%d] get iv: %s from %s" % (id(self), hexlify(mpacket.iv), self.transport.getPeer()))
 
                 if self.is_server():

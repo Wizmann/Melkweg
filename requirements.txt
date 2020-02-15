@@ -6,7 +6,7 @@ hyperlink==17.3.1
 incremental==17.5.0
 protobuf==3.4.0
 py==1.4.34
-pycryptodome==3.6.6
+pycryptodome>=3.6.6
 pytest==3.2.3
 six==1.11.0
 twisted>=19.7.0

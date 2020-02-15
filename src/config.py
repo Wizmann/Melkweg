@@ -14,7 +14,10 @@ HEARTBEAT = 10
 CLIENT_OUTGOING_CONN_NUM = 10
 SOCKS5_OUTGOING_PROTOCOL_TIMEOUT = 30
 
-SERVER = "127.0.0.1"
+CIPHER = "AES_CTR_HMAC"
+HMAC_KEY = "Say we ain't got no dope / All I got's my forty / Ain't got nobody baby / That I can call my shorty"
+
+SERVER = '127.0.0.1'
 SERVER_PORT = 20000
 CLIENT_PORT = 20001
 KEY = "if you stand, if you are true"
