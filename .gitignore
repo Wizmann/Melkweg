@@ -5,7 +5,7 @@ __pycache__/
 nohup.out
 
 # Vim temp file
-*.sw[pon]
+*.sw[ponlm]
 
 # C extensions
 *.so

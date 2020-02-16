@@ -8,7 +8,6 @@ import random
 from Crypto.Cipher import AES
 from Crypto.Util import Counter
 import Crypto.Hash.SHA256
-import config
 from Crypto.Util.number import bytes_to_long
 
 def digest(plain_text, length=16):
@@ -54,7 +53,7 @@ class AES_CTR(ICipher):
 class AES_CTR_HMAC(ICipher):
     HMAC_LEN = 16
     def __init__(self, key, iv):
-        self.hmac_key = config.HMAC_KEY
+        self.hmac_key = key
         ctr = Counter.new(128, initial_value=bytes_to_long(iv))
         self.aes = AES.new(digest(key), AES.MODE_CTR, counter=ctr)
 
