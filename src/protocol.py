@@ -93,6 +93,8 @@ class MelkwegProtocolBase(Int32StringReceiver, TimeoutMixin):
                 self.handleDataPacket(mpacket)
             elif mpacket.flags in [PacketFlag.RST, PacketFlag.FIN]:
                 logging.debug("connection on port %d will be terminated" % mpacket.port)
+                if mpacket.port in self.d and self.d[mpacket.port] and self.d[mpacket.port].transport:
+                    self.d[mpacket.port].transport.loseConnection()
                 if self.is_server() and mpacket.port in self.d:
                     del self.d[mpacket.port]
             elif mpacket.flags == PacketFlag.LIV:

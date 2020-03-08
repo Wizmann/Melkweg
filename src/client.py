@@ -83,4 +83,8 @@ if __name__ == '__main__':
                 config.CLIENT_PORT, 
                 MelkwegLocalProxyFactory(config.SERVER, config.SERVER_PORT))
 
+    if config.USE_LOCAL_DNS:
+        import localdns
+        localdns.build_dns()
+
     reactor.run()

@@ -12,3 +12,4 @@ six==1.11.0
 twisted>=19.7.0
 zope.interface==4.4.3
 web.py>=0.38
+txsocksx==1.15.0.2
