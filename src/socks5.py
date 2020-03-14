@@ -243,7 +243,7 @@ class SOCKSv5(protocol.Protocol):
     def connectRequested(self, addr, port):
         self.transport.stopReading()
         self.state = STATE_CONNECT_PENDING
-        if isinstance(addr, int):
+        if isinstance(addr, int) or isinstance(addr, long):
             addr = Int2IP(addr)
 
         return protocol.ClientCreator(reactor, SOCKSv5Outgoing, self).connectTCP(addr, port)
