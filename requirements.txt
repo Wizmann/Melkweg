@@ -4,7 +4,7 @@ constantly==15.1.0
 enum34==1.1.6
 hyperlink==17.3.1
 incremental==17.5.0
-protobuf==3.15.0
+protobuf==3.18.3
 py==1.10.0
 pycryptodome>=3.6.6
 pytest==3.2.3
